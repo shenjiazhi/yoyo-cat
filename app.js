@@ -151,22 +151,36 @@ function cloudStatus(ok,text){
 function showAuth(show){if($c("cloudAuth"))$c("cloudAuth").classList.toggle("hidden",!show)}
 async function cloudLogin(){
  const email=$c("cloudEmail").value.trim(),password=$c("cloudPassword").value;
- const msg=$c("cloudLoginMsg"); if(!email||!password){msg.textContent="请输入邮箱和密码";return}
- $c("cloudLoginBtn").disabled=true;msg.textContent="正在登录…";
- const {error}=await cloud.auth.signInWithPassword({email,password});
- $c("cloudLoginBtn").disabled=false;
- if(error){msg.textContent="登录失败："+error.message;return}
- showAuth(false);await cloudBoot();
+ const msg=$c("cloudLoginMsg");
+ if(!email||!password){msg.textContent="请输入邮箱和密码";return}
+ $c("cloudLoginBtn").disabled=true; msg.textContent="正在登录…";
+ try{
+   const {data,error}=await cloud.auth.signInWithPassword({email,password});
+   if(error)throw error;
+   if(!data.session)throw new Error("登录成功但未获得会话");
+   msg.textContent="登录成功，正在同步…";
+   showAuth(false);
+   setTimeout(()=>cloudBoot(),0);
+ }catch(e){
+   msg.textContent="登录失败："+(e?.message||String(e));
+ }finally{
+   $c("cloudLoginBtn").disabled=false;
+ }
 }
 async function cloudBoot(){
- if(cloudBusy)return; cloudBusy=true;cloudStatus(false,"同步中");
+ if(cloudBusy)return;
+ cloudBusy=true; cloudStatus(false,"同步中…");
  try{
-   const {data:{session}}=await cloud.auth.getSession();
-   if(!session){showAuth(true);cloudStatus(false,"未登录");return}
+   const {data:{user},error:userErr}=await cloud.auth.getUser();
+   if(userErr || !user){
+     showAuth(true); cloudReady=false; cloudStatus(false,"未登录");
+     return;
+   }
    showAuth(false);
-   // First-time seed: only when cloud weights is completely empty.
+
    let {data:w,error:we}=await cloud.from("weights").select("*").order("record_date");
    if(we)throw we;
+
    if(!w.length){
      const seed=[
        {record_date:"2026-07-11",weight:1.35},
@@ -174,27 +188,43 @@ async function cloudBoot(){
        {record_date:"2026-08-22",weight:2.37},
        {record_date:"2026-09-23",weight:3.00}
      ];
-     const {error}=await cloud.from("weights").insert(seed); if(error)throw error;
-     w=(await cloud.from("weights").select("*").order("record_date")).data||[];
+     const {error:seedErr}=await cloud.from("weights").insert(seed);
+     if(seedErr)throw seedErr;
+     const seeded=await cloud.from("weights").select("*").order("record_date");
+     if(seeded.error)throw seeded.error;
+     w=seeded.data||[];
    }
+
    const [lr,tr,dr]=await Promise.all([
      cloud.from("litter_records").select("*").order("record_date"),
      cloud.from("temperature_records").select("*").order("record_date"),
      cloud.from("deworming_records").select("*").order("record_date")
    ]);
-   if(lr.error)throw lr.error;if(tr.error)throw tr.error;if(dr.error)throw dr.error;
-   weights=w.map(x=>({date:x.record_date,weight:Number(x.weight)}));
+   if(lr.error)throw lr.error;
+   if(tr.error)throw tr.error;
+   if(dr.error)throw dr.error;
+
+   weights=(w||[]).map(x=>({date:x.record_date,weight:Number(x.weight)}));
    litter=(lr.data||[]).map(x=>({date:x.record_date}));
    temps=(tr.data||[]).map(x=>({date:x.record_date,temp:Number(x.temperature)}));
    deworms=(dr.data||[]).map(x=>({date:x.record_date,drug:x.medicine,type:x.deworm_type}));
+
    localStorage.setItem("yoyoWeightsV2",JSON.stringify(weights));
    localStorage.setItem("yoyoLitterV2",JSON.stringify(litter));
    localStorage.setItem("yoyoTempsV2",JSON.stringify(temps));
    localStorage.setItem("yoyoDewormsV2",JSON.stringify(deworms));
-   renderWeights();renderLitter();renderTemps();renderDeworms();
-   cloudReady=true;cloudStatus(true,"云端已同步");
- }catch(e){console.error(e);cloudStatus(false,"同步失败");alert("云同步失败："+e.message)}
- finally{cloudBusy=false}
+
+   renderWeights(); renderLitter(); renderTemps(); renderDeworms();
+   cloudReady=true; cloudStatus(true,"云端已同步");
+ }catch(e){
+   console.error("YOYO cloudBoot:",e);
+   cloudReady=false;
+   cloudStatus(false,"同步失败");
+   const msg=$c("cloudLoginMsg");
+   if(msg)msg.textContent="同步失败："+(e?.message||String(e));
+ }finally{
+   cloudBusy=false;
+ }
 }
 async function cloudRefresh(){if(cloudReady)await cloudBoot()}
 
@@ -239,5 +269,8 @@ document.addEventListener("submit",()=>setTimeout(reconcileCloud,450));
 $c("cloudLoginBtn")?.addEventListener("click",cloudLogin);
 $c("cloudPassword")?.addEventListener("keydown",e=>{if(e.key==="Enter")cloudLogin()});
 $c("cloudLogoutBtn")?.addEventListener("click",async()=>{await cloud.auth.signOut();cloudReady=false;showAuth(true);cloudStatus(false,"未登录")});
-cloud.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"){showAuth(true);cloudStatus(false,"未登录")}});
-cloudBoot();
+cloud.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT"){cloudReady=false;showAuth(true);cloudStatus(false,"未登录");}
+  if(event==="TOKEN_REFRESHED"){cloudStatus(true,"云端已同步");}
+});
+setTimeout(()=>cloudBoot(),0);

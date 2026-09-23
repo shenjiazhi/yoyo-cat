@@ -1,0 +1,20 @@
+YOYO V6.1 云同步修正版
+
+修复重点：
+1. 修复登录事件回调与 getSession/getUser 初始化之间可能发生的等待问题。
+2. 登录成功后显式启动云端初始化，不再依赖 Auth 回调里执行异步数据库逻辑。
+3. 初始化身份检查改用 getUser。
+4. 云同步失败时在登录区域显示具体错误，并在 Console 输出 YOYO cloudBoot 错误。
+5. service worker 缓存版本升级，避免继续加载旧 V6 app.js。
+6. CSS/JS 增加 v=6.1.2 缓存版本号。
+7. Supabase JS 固定到 2.x 具体版本，避免 CDN @2 随时间变化。
+
+部署：
+将本文件夹内所有文件覆盖上传到 GitHub yoyo-cat 仓库根目录。
+等待 Pages 部署完成后，在电脑浏览器 Ctrl+Shift+R 强制刷新。
+如果已安装到手机桌面，完全关闭 YOYO App 后重新打开；必要时浏览器先访问网页刷新一次。
+
+说明：
+Edge 控制台的“Tracking Prevention blocked access to storage for jsDelivr”警告本身不等同于 Supabase 数据请求失败。
+Supabase 官方支持 CDN 引入，浏览器端 persistSession 默认使用 localStorage。
+本版主要修复应用自身的初始化/同步执行顺序。
