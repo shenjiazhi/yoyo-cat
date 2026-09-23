@@ -11,21 +11,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>YOYO成长档案</title>
-<link rel="stylesheet" href="style.css?v=6.1.2">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="cloudAuth" class="cloud-auth">
-  <div class="cloud-login-card">
-    <div class="cloud-cat">🐾</div>
-    <h1>YOYO 云同步</h1>
-    <p>登录后，手机和电脑使用同一份成长记录。</p>
-    <label>邮箱<input id="cloudEmail" type="email" autocomplete="username" placeholder="请输入登录邮箱"></label>
-    <label>密码<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="请输入密码"></label>
-    <button id="cloudLoginBtn" class="primary">登录 YOYO</button>
-    <small id="cloudLoginMsg">🔒 数据由 Supabase 登录与 RLS 权限保护</small>
-  </div>
-</div>
-
 <main class="app">
 
 <section class="page active page-enter" id="homePage">
@@ -43,7 +31,6 @@
     </div>
     <div class="speech">Hi～<br>我是 YOYO！<span>♥</span></div>
     <div class="hero-note">小小的身影<br>大大的幸福 🐾</div>
-    <div class="cloud-pill"><span id="cloudDot"></span><b id="cloudState">云端连接中</b><button id="cloudLogoutBtn">退出</button></div>
   </header>
 
   <section class="photo-story reveal delay-1">
@@ -157,8 +144,7 @@
 <div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveDewormBtn">保存</button></div>
 </div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<script src="app.js?v=6.1.2"></script>
+<script src="app.js"></script>
 <script>
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));

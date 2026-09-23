@@ -1,4 +1,4 @@
-const CACHE="yoyo-v6-1-cloud-fix-2";
+const CACHE="yoyo-v5-1";
 const ASSETS=["./","./index.html","./style.css","./app.js","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png","./images/yoyo-window.jpg","./images/yoyo-look.jpg","./images/yoyo-side.jpg"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
