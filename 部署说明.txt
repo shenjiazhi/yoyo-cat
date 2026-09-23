@@ -1,0 +1,15 @@
+YOYO成长档案 V3 PWA
+
+部署：
+1. 把整个 yoyo-cat-v3-pwa 文件夹内容上传到 GitHub 仓库根目录。
+2. GitHub 仓库 Settings -> Pages。
+3. Build and deployment 选择 Deploy from a branch。
+4. Branch 选择 main，目录选择 /(root)，保存。
+5. 等待 GitHub Pages 生成 HTTPS 地址后，用手机打开。
+6. Android/Chrome 可使用页面“安装 YOYO 到桌面”按钮或浏览器安装菜单。
+7. iPhone/Safari：分享 -> 添加到主屏幕。
+
+注意：
+- 必须通过 HTTPS/GitHub Pages 使用 PWA；直接 file:// 打开时 Service Worker 不会启用。
+- 体重、猫砂、体温、驱虫记录保存在当前设备浏览器 localStorage，不会自动跨设备同步。
+- 将 YOYO 照片命名为 yoyo.png 并放入 images 文件夹。

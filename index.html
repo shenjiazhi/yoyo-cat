@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#eef7ff">
+<meta name="description" content="YOYO的小猫成长、体重、猫砂与健康记录">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="YOYO档案">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>YOYO成长档案</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+
+<section class="page active page-enter" id="homePage">
+  <div class="v5-bg blob-a"></div><div class="v5-bg blob-b"></div>
+
+  <header class="v5-hero reveal">
+    <div class="hero-copy">
+      <h1>YOYO <span class="paw-bounce">🐾</span></h1>
+      <p>我的小猫成长档案</p>
+      <div class="hand-note">陪你慢慢长大 ♡</div>
+    </div>
+    <div class="hero-profile">
+      <div class="avatar-ring"><img src="images/yoyo.png" alt="YOYO"></div>
+      <h2>YOYO</h2><p>奶牛猫 · GG <b>♂</b></p>
+    </div>
+    <div class="speech">Hi～<br>我是 YOYO！<span>♥</span></div>
+    <div class="hero-note">小小的身影<br>大大的幸福 🐾</div>
+  </header>
+
+  <section class="photo-story reveal delay-1">
+    <figure class="polaroid p1"><img src="images/yoyo-window.jpg" alt="YOYO在窗边"><figcaption>看窗外的世界 ♡</figcaption></figure>
+    <figure class="polaroid p2"><img src="images/yoyo-look.jpg" alt="YOYO抬头看"><figcaption>好奇的小眼神 ♡</figcaption></figure>
+    <figure class="polaroid p3"><img src="images/yoyo-side.jpg" alt="YOYO陪在身边"><figcaption>陪在你身边 ♡</figcaption></figure>
+  </section>
+
+  <section class="summary v5-summary">
+    <article class="reveal delay-2"><i class="pink">🎂</i><div><span>年龄</span><strong id="age">计算中...</strong><small>2026年4月17日出生</small></div></article>
+    <article class="reveal delay-3"><i>⚖️</i><div><span>当前体重</span><strong id="currentWeight">-- kg</strong><small id="latestWeightDate">最后更新：--</small></div></article>
+  </section>
+
+  <section class="panel v5-trend reveal delay-4">
+    <div class="head">
+      <div><h2>📈 体重增长趋势</h2><p>见证每一克的成长 ❤️</p></div>
+      <button class="primary soft-press" id="addWeightBtn">＋ 记录体重</button>
+    </div>
+    <div class="chart"><canvas id="weightChart"></canvas></div>
+  </section>
+
+  <section class="dashboard-grid reveal delay-5">
+    <button class="dash-card vaccine-card" data-page-jump="healthPage">
+      <div class="dash-top"><span>💉</span><b>最近疫苗记录</b><em>›</em></div>
+      <strong>妙三多 · 第3针</strong><p>2026年8月22日</p><small>瑞派美和宠物医院</small>
+    </button>
+    <button class="dash-card litter-card" data-page-jump="litterPage">
+      <div class="dash-top"><span>🧹</span><b>猫砂更换</b><em>›</em></div>
+      <small>上次更换</small><strong id="homeLitterDate">暂无记录</strong><p id="homeLitterDays">点击进入记录</p>
+    </button>
+    <div class="dash-card health-card">
+      <div class="dash-top"><span>❤️</span><b>健康管理</b><em>›</em></div>
+      <button class="health-shortcut" data-open-modal="tempModal">🌡️ <span>体温记录</span> ›</button>
+      <button class="health-shortcut" data-open-modal="dewormModal">💊 <span>驱虫记录</span> ›</button>
+    </div>
+  </section>
+
+  <p class="wish reveal">🐾 健康、快乐、一直在一起 ～ ♡</p>
+  <div class="install-wrap"><button id="installBtn" class="install-btn soft-press" hidden>📱 安装 YOYO 到桌面</button></div>
+
+  <!-- 完整体重数据仍由 JS 保存，但首页不再重复显示一整张体重记录表 -->
+  <div id="weightCount" hidden></div><div id="weightList" hidden></div>
+</section>
+
+<section class="page" id="litterPage">
+  <header class="page-title"><div class="big-icon">🧹</div><div><h1>猫砂更换</h1><p>保持 YOYO 的小厕所干净清爽</p></div></header>
+  <section class="summary litter-summary">
+    <article><i>📅</i><div><span>上次更换</span><strong id="lastLitterDate">暂无</strong><small>最近一次完整更换日期</small></div></article>
+    <article><i class="pink">⏱️</i><div><span>距离上次更换</span><strong id="litterDays">--</strong><small>自动计算天数</small></div></article>
+  </section>
+  <section class="panel">
+    <div class="head"><div><h2>🧹 猫砂更换记录</h2><p>每次完整更换猫砂后记录一次</p></div><button class="primary" id="addLitterBtn">＋ 记录更换</button></div>
+    <div id="litterList" class="simple-list"></div>
+  </section>
+</section>
+
+<section class="page" id="healthPage">
+  <header class="page-title"><div class="big-icon">❤️</div><div><h1>YOYO 健康</h1><p>体温、疫苗与驱虫记录</p></div></header>
+
+  <section class="panel">
+    <div class="head"><div><h2>🌡️ 体温记录</h2><p id="latestTemp">最近：暂无记录</p></div><button class="primary" id="addTempBtn">＋ 记录体温</button></div>
+    <div id="tempList" class="simple-list"></div>
+  </section>
+
+  <section class="panel">
+    <div class="head"><h2>💉 疫苗记录</h2><span>共 3 条记录</span></div>
+    <div class="table-head vaccine-grid"><span>接种日期</span><span>疫苗</span><span>针次</span><span>接种医院</span></div>
+    <div class="vaccine-list">
+      <div class="vaccine-grid record"><span>2026年8月22日</span><b>妙三多</b><span>第3针</span><span>瑞派美和宠物医院</span></div>
+      <div class="vaccine-grid record"><span>2026年8月1日</span><b>妙三多</b><span>第2针</span><span>瑞派美和宠物医院</span></div>
+      <div class="vaccine-grid record"><span>2026年7月11日</span><b>妙三多</b><span>第1针</span><span>瑞派美和宠物医院</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="head"><div><h2>💊 驱虫药使用记录</h2><p>记录药品、日期和驱虫类型</p></div><button class="primary" id="addDewormBtn">＋ 记录驱虫</button></div>
+    <div id="dewormList" class="simple-list"></div>
+  </section>
+</section>
+
+</main>
+
+<nav class="bottom-nav">
+<button class="nav active" data-page="homePage"><span>⌂</span><b>首页</b></button>
+<button class="nav" data-page="litterPage"><span>🧹</span><b>猫砂</b></button>
+<button class="nav" data-page="healthPage"><span>♡</span><b>健康</b></button>
+</nav>
+
+<div class="modal" id="weightModal"><div class="dialog">
+<div class="head"><div><h2>记录体重 🐾</h2><p>记录 YOYO 的体重</p></div><button class="close" data-close>×</button></div>
+<label>日期</label><input type="date" id="weightDate"><label>体重（kg）</label><input type="number" id="weightInput" min="0.01" step="0.01" placeholder="例如：3.15">
+<div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveWeightBtn">保存</button></div>
+</div></div>
+
+<div class="modal" id="litterModal"><div class="dialog">
+<div class="head"><div><h2>记录猫砂更换 🧹</h2><p>选择完整更换猫砂的日期</p></div><button class="close" data-close>×</button></div>
+<label>更换日期</label><input type="date" id="litterDate">
+<div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveLitterBtn">保存</button></div>
+</div></div>
+
+<div class="modal" id="tempModal"><div class="dialog">
+<div class="head"><div><h2>记录体温 🌡️</h2><p>记录测量日期与体温</p></div><button class="close" data-close>×</button></div>
+<label>日期</label><input type="date" id="tempDate"><label>体温（℃）</label><input type="number" id="tempInput" step="0.1" placeholder="例如：38.5">
+<div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveTempBtn">保存</button></div>
+</div></div>
+
+<div class="modal" id="dewormModal"><div class="dialog">
+<div class="head"><div><h2>记录驱虫 💊</h2><p>保存驱虫药使用信息</p></div><button class="close" data-close>×</button></div>
+<label>日期</label><input type="date" id="dewormDate"><label>药品名称</label><input type="text" id="dewormDrug" placeholder="例如：大宠爱">
+<label>驱虫类型</label><select id="dewormType"><option>体内</option><option>体外</option><option>内外同驱</option></select>
+<div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveDewormBtn">保存</button></div>
+</div></div>
+
+<script src="app.js"></script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));
+}
+</script>
+</body></html>
