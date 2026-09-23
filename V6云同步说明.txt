@@ -1,0 +1,20 @@
+YOYO成长档案 V6 云同步版
+
+新增：
+- Supabase 邮箱/密码登录
+- 体重、猫砂、体温、驱虫云同步
+- 手机/电脑使用同一账号读取同一份数据
+- localStorage 继续作为本机缓存
+- 云端 weights 首次为空时自动写入 YOYO 4 条历史体重
+- 首页显示云同步状态和退出按钮
+- 继续保留 V5 照片首页、PWA、离线静态资源
+
+部署：
+把本文件夹内所有文件覆盖上传到原 GitHub yoyo-cat 仓库根目录。
+等待 GitHub Pages 重新部署后，强制刷新页面。
+首次进入会出现 YOYO 云同步登录界面，使用 Supabase Authentication 中创建的邮箱和密码登录。
+
+安全：
+前端仅包含 Supabase Publishable Key。
+不要把 service_role / secret key / 数据库密码放进任何前端文件。
+数据访问由 Supabase Auth + RLS 控制。

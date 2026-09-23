@@ -133,3 +133,111 @@ document.querySelectorAll("[data-open-modal]").forEach(btn=>{
  btn.addEventListener("click",e=>{e.stopPropagation();openModal(btn.dataset.openModal);});
 });
 renderHomeLitterSummary();
+
+
+/* ===== V6 Supabase 云同步层 ===== */
+const SUPABASE_URL="https://btdjcbfiduzksworixnb.supabase.co";
+const SUPABASE_KEY="sb_publishable_KdIKiyROgTb2QV5hfz8Odw_yaHmGynp";
+const cloud=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+let cloudReady=false,cloudBusy=false;
+const $c=id=>document.getElementById(id);
+function cloudStatus(ok,text){
+ const pill=document.querySelector(".cloud-pill");
+ if(pill)pill.classList.toggle("online",!!ok);
+ if($c("cloudState"))$c("cloudState").textContent=text;
+}
+function showAuth(show){if($c("cloudAuth"))$c("cloudAuth").classList.toggle("hidden",!show)}
+async function cloudLogin(){
+ const email=$c("cloudEmail").value.trim(),password=$c("cloudPassword").value;
+ const msg=$c("cloudLoginMsg"); if(!email||!password){msg.textContent="请输入邮箱和密码";return}
+ $c("cloudLoginBtn").disabled=true;msg.textContent="正在登录…";
+ const {error}=await cloud.auth.signInWithPassword({email,password});
+ $c("cloudLoginBtn").disabled=false;
+ if(error){msg.textContent="登录失败："+error.message;return}
+ showAuth(false);await cloudBoot();
+}
+async function cloudBoot(){
+ if(cloudBusy)return; cloudBusy=true;cloudStatus(false,"同步中");
+ try{
+   const {data:{session}}=await cloud.auth.getSession();
+   if(!session){showAuth(true);cloudStatus(false,"未登录");return}
+   showAuth(false);
+   // First-time seed: only when cloud weights is completely empty.
+   let {data:w,error:we}=await cloud.from("weights").select("*").order("record_date");
+   if(we)throw we;
+   if(!w.length){
+     const seed=[
+       {record_date:"2026-07-11",weight:1.35},
+       {record_date:"2026-08-01",weight:1.85},
+       {record_date:"2026-08-22",weight:2.37},
+       {record_date:"2026-09-23",weight:3.00}
+     ];
+     const {error}=await cloud.from("weights").insert(seed); if(error)throw error;
+     w=(await cloud.from("weights").select("*").order("record_date")).data||[];
+   }
+   const [lr,tr,dr]=await Promise.all([
+     cloud.from("litter_records").select("*").order("record_date"),
+     cloud.from("temperature_records").select("*").order("record_date"),
+     cloud.from("deworming_records").select("*").order("record_date")
+   ]);
+   if(lr.error)throw lr.error;if(tr.error)throw tr.error;if(dr.error)throw dr.error;
+   weights=w.map(x=>({date:x.record_date,weight:Number(x.weight)}));
+   litter=(lr.data||[]).map(x=>({date:x.record_date}));
+   temps=(tr.data||[]).map(x=>({date:x.record_date,temp:Number(x.temperature)}));
+   deworms=(dr.data||[]).map(x=>({date:x.record_date,drug:x.medicine,type:x.deworm_type}));
+   localStorage.setItem("yoyoWeightsV2",JSON.stringify(weights));
+   localStorage.setItem("yoyoLitterV2",JSON.stringify(litter));
+   localStorage.setItem("yoyoTempsV2",JSON.stringify(temps));
+   localStorage.setItem("yoyoDewormsV2",JSON.stringify(deworms));
+   renderWeights();renderLitter();renderTemps();renderDeworms();
+   cloudReady=true;cloudStatus(true,"云端已同步");
+ }catch(e){console.error(e);cloudStatus(false,"同步失败");alert("云同步失败："+e.message)}
+ finally{cloudBusy=false}
+}
+async function cloudRefresh(){if(cloudReady)await cloudBoot()}
+
+/* 捕获本地记录变化，同步到云端。用事件后的 localStorage 快照进行 upsert/delete 对齐。 */
+let lastSnapshots={};
+function snapshot(){
+ return {
+  weights:JSON.parse(localStorage.getItem("yoyoWeightsV2")||"[]"),
+  litter:JSON.parse(localStorage.getItem("yoyoLitterV2")||"[]"),
+  temps:JSON.parse(localStorage.getItem("yoyoTempsV2")||"[]"),
+  deworms:JSON.parse(localStorage.getItem("yoyoDewormsV2")||"[]")
+ };
+}
+async function reconcileCloud(){
+ if(!cloudReady)return;
+ const s=snapshot();
+ try{
+   // weights
+   let cw=(await cloud.from("weights").select("id,record_date")).data||[];
+   let dates=new Set(s.weights.map(x=>x.date));
+   for(const r of cw)if(!dates.has(r.record_date))await cloud.from("weights").delete().eq("id",r.id);
+   if(s.weights.length)await cloud.from("weights").upsert(s.weights.map(x=>({record_date:x.date,weight:x.weight})),{onConflict:"record_date"});
+   // litter
+   let cl=(await cloud.from("litter_records").select("id,record_date")).data||[];
+   dates=new Set(s.litter.map(x=>x.date));
+   for(const r of cl)if(!dates.has(r.record_date))await cloud.from("litter_records").delete().eq("id",r.id);
+   if(s.litter.length)await cloud.from("litter_records").upsert(s.litter.map(x=>({record_date:x.date})),{onConflict:"record_date"});
+   // temps
+   let ct=(await cloud.from("temperature_records").select("id,record_date")).data||[];
+   dates=new Set(s.temps.map(x=>x.date));
+   for(const r of ct)if(!dates.has(r.record_date))await cloud.from("temperature_records").delete().eq("id",r.id);
+   if(s.temps.length)await cloud.from("temperature_records").upsert(s.temps.map(x=>({record_date:x.date,temperature:x.temp})),{onConflict:"record_date"});
+   // deworm: table lacks unique date, replace whole small set for deterministic sync
+   await cloud.from("deworming_records").delete().gte("id",0);
+   if(s.deworms.length)await cloud.from("deworming_records").insert(s.deworms.map(x=>({record_date:x.date,medicine:x.drug,deworm_type:x.type})));
+   cloudStatus(true,"云端已同步");
+ }catch(e){console.error(e);cloudStatus(false,"待同步")}
+}
+document.addEventListener("click",()=>setTimeout(reconcileCloud,450));
+document.addEventListener("submit",()=>setTimeout(reconcileCloud,450));
+
+$c("cloudLoginBtn")?.addEventListener("click",cloudLogin);
+$c("cloudPassword")?.addEventListener("keydown",e=>{if(e.key==="Enter")cloudLogin()});
+$c("cloudLogoutBtn")?.addEventListener("click",async()=>{await cloud.auth.signOut();cloudReady=false;showAuth(true);cloudStatus(false,"未登录")});
+cloud.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT"){showAuth(true);cloudStatus(false,"未登录")}});
+cloudBoot();
