@@ -12,6 +12,12 @@ let weights=load("yoyoWeightsV2",[...defaults]);
 let litter=load("yoyoLitterV2",[]);
 let temps=load("yoyoTempsV2",[]);
 let deworms=load("yoyoDewormsV2",[]);
+const defaultVaccines=[
+ {date:"2026-07-11",name:"妙三多",dose:"第1针",hospital:"瑞派美和宠物医院"},
+ {date:"2026-08-01",name:"妙三多",dose:"第2针",hospital:"瑞派美和宠物医院"},
+ {date:"2026-08-22",name:"妙三多",dose:"第3针",hospital:"瑞派美和宠物医院"}
+];
+let vaccines=load("yoyoVaccinesV1",[...defaultVaccines]);
 const cn=d=>{let[y,m,day]=d.split("-").map(Number);return `${y}年${m}月${day}日`};
 const short=d=>{let[,m,day]=d.split("-").map(Number);return `${m}/${day}`};
 const todayValue=()=>{let n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`};
@@ -52,12 +58,28 @@ function renderTemps(){
  $("tempList").innerHTML=a.length?a.map(r=>`<div class="simple-row"><div><strong>${cn(r.date)}</strong><small>体温测量</small></div><b>${r.temp.toFixed(1)} ℃</b><button class="delete" data-temp="${r.date}">删除</button></div>`).join(""):`<p>还没有体温记录。</p>`;
 }
 
+function renderVaccines(){
+ let a=[...vaccines].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ $("vaccineCount").textContent=`共 ${a.length} 条记录`;
+ $("vaccineList").innerHTML=a.length?a.map((r,i)=>`<div class="vaccine-grid record"><span>${cn(r.date)}</span><b>${r.name}</b><span>${r.dose||"—"}</span><span>${r.hospital}</span><button class="delete vaccine-delete" data-vaccine="${i}">删除</button></div>`).join(""):`<p class="empty">还没有疫苗记录。</p>`;
+ const last=a[0];
+ if(last){
+   $("homeVaccineName").textContent=`${last.name}${last.dose?" · "+last.dose:""}`;
+   $("homeVaccineDate").textContent=cn(last.date);
+   $("homeVaccineHospital").textContent=last.hospital;
+ }else{
+   $("homeVaccineName").textContent="暂无疫苗记录";
+   $("homeVaccineDate").textContent="点击进入记录";
+   $("homeVaccineHospital").textContent="";
+ }
+}
+
 function renderDeworms(){
  let a=[...deworms].sort((a,b)=>new Date(b.date)-new Date(a.date));
  $("dewormList").innerHTML=a.length?a.map((r,i)=>`<div class="simple-row"><div><strong>${cn(r.date)}</strong><small>${r.type}</small></div><b>${r.drug}</b><button class="delete" data-deworm="${i}">删除</button></div>`).join(""):`<p>还没有驱虫药使用记录。</p>`;
 }
 
-function render(){renderAge();renderWeights();renderLitter();renderTemps();renderDeworms()}
+function render(){renderAge();renderWeights();renderLitter();renderTemps();renderVaccines();renderDeworms()}
 
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");let target=$(b.dataset.page);target.classList.add("active");target.classList.remove("page-enter");void target.offsetWidth;target.classList.add("page-enter");scrollTo({top:0,behavior:"smooth"});if(b.dataset.page==="homePage")setTimeout(renderWeights,50)});
 
@@ -75,12 +97,40 @@ $("saveLitterBtn").onclick=()=>{let date=$("litterDate").value;if(!date)return a
 $("addTempBtn").onclick=()=>{$("tempDate").value=todayValue();$("tempInput").value="";openModal("tempModal")};
 $("saveTempBtn").onclick=()=>{let date=$("tempDate").value,t=parseFloat($("tempInput").value);if(!date)return alert("请选择日期");if(!Number.isFinite(t))return alert("请输入体温");let old=temps.find(r=>r.date===date);if(old){if(!confirm("当天已有体温记录，是否修改？"))return;old.temp=t}else temps.push({date,temp:t});save("yoyoTempsV2",temps);$("tempModal").classList.remove("show");renderTemps()};
 
+$("addVaccineBtn").onclick=()=>{
+ $("vaccineDate").value=todayValue();
+ $("vaccineName").value="";
+ $("vaccineDose").value="";
+ $("vaccineHospital").value="";
+ openModal("vaccineModal");
+};
+$("saveVaccineBtn").onclick=()=>{
+ let date=$("vaccineDate").value,name=$("vaccineName").value.trim(),dose=$("vaccineDose").value.trim(),hospital=$("vaccineHospital").value.trim();
+ if(!date)return alert("请选择接种日期");
+ if(!name)return alert("请输入疫苗名称");
+ if(!hospital)return alert("请输入医院名称");
+ vaccines.push({date,name,dose,hospital});
+ save("yoyoVaccinesV1",vaccines);
+ $("vaccineModal").classList.remove("show");
+ renderVaccines();
+};
+
 $("addDewormBtn").onclick=()=>{$("dewormDate").value=todayValue();$("dewormDrug").value="";openModal("dewormModal")};
 $("saveDewormBtn").onclick=()=>{let date=$("dewormDate").value,drug=$("dewormDrug").value.trim(),type=$("dewormType").value;if(!date)return alert("请选择日期");if(!drug)return alert("请输入药品名称");deworms.push({date,drug,type});save("yoyoDewormsV2",deworms);$("dewormModal").classList.remove("show");renderDeworms()};
 
 $("weightList").onclick=e=>{let b=e.target.closest("[data-weight]");if(b&&confirm("确定删除这条体重记录吗？")){weights=weights.filter(r=>r.date!==b.dataset.weight);save("yoyoWeightsV2",weights);renderWeights()}};
 $("litterList").onclick=e=>{let b=e.target.closest("[data-litter]");if(b&&confirm("确定删除这条猫砂更换记录吗？")){litter=litter.filter(r=>r.date!==b.dataset.litter);save("yoyoLitterV2",litter);renderLitter()}};
 $("tempList").onclick=e=>{let b=e.target.closest("[data-temp]");if(b&&confirm("确定删除这条体温记录吗？")){temps=temps.filter(r=>r.date!==b.dataset.temp);save("yoyoTempsV2",temps);renderTemps()}};
+$("vaccineList").onclick=e=>{
+ let b=e.target.closest("[data-vaccine]");
+ if(b&&confirm("确定删除这条疫苗记录吗？")){
+   let sorted=[...vaccines].sort((a,b)=>new Date(b.date)-new Date(a.date));
+   let target=sorted[Number(b.dataset.vaccine)];
+   vaccines=vaccines.filter(r=>r!==target);
+   save("yoyoVaccinesV1",vaccines);
+   renderVaccines();
+ }
+};
 $("dewormList").onclick=e=>{let b=e.target.closest("[data-deworm]");if(b&&confirm("确定删除这条驱虫记录吗？")){let sorted=[...deworms].sort((a,b)=>new Date(b.date)-new Date(a.date));let target=sorted[Number(b.dataset.deworm)];deworms=deworms.filter(r=>r!==target);save("yoyoDewormsV2",deworms);renderDeworms()}};
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{if($("homePage").classList.contains("active"))renderWeights()},120)});
 render();
@@ -133,3 +183,11 @@ document.querySelectorAll("[data-open-modal]").forEach(btn=>{
  btn.addEventListener("click",e=>{e.stopPropagation();openModal(btn.dataset.openModal);});
 });
 renderHomeLitterSummary();
+
+// Mobile interaction guard: avoid accidental double-tap zoom on app controls.
+let lastTouchEnd=0;
+document.addEventListener("touchend",function(e){
+  const now=Date.now();
+  if(now-lastTouchEnd<=300 && e.target.closest("button,.bottom-nav,.dash-card")) e.preventDefault();
+  lastTouchEnd=now;
+},{passive:false});

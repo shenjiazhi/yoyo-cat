@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#eef7ff">
 <meta name="description" content="YOYO的小猫成长、体重、猫砂与健康记录">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>YOYO成长档案</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=5.2">
 </head>
 <body>
 <main class="app">
@@ -55,7 +56,7 @@
   <section class="dashboard-grid reveal delay-5">
     <button class="dash-card vaccine-card" data-page-jump="healthPage">
       <div class="dash-top"><span>💉</span><b>最近疫苗记录</b><em>›</em></div>
-      <strong>妙三多 · 第3针</strong><p>2026年8月22日</p><small>瑞派美和宠物医院</small>
+      <strong id="homeVaccineName">妙三多 · 第3针</strong><p id="homeVaccineDate">2026年8月22日</p><small id="homeVaccineHospital">瑞派美和宠物医院</small>
     </button>
     <button class="dash-card litter-card" data-page-jump="litterPage">
       <div class="dash-top"><span>🧹</span><b>猫砂更换</b><em>›</em></div>
@@ -96,13 +97,9 @@
   </section>
 
   <section class="panel">
-    <div class="head"><h2>💉 疫苗记录</h2><span>共 3 条记录</span></div>
-    <div class="table-head vaccine-grid"><span>接种日期</span><span>疫苗</span><span>针次</span><span>接种医院</span></div>
-    <div class="vaccine-list">
-      <div class="vaccine-grid record"><span>2026年8月22日</span><b>妙三多</b><span>第3针</span><span>瑞派美和宠物医院</span></div>
-      <div class="vaccine-grid record"><span>2026年8月1日</span><b>妙三多</b><span>第2针</span><span>瑞派美和宠物医院</span></div>
-      <div class="vaccine-grid record"><span>2026年7月11日</span><b>妙三多</b><span>第1针</span><span>瑞派美和宠物医院</span></div>
-    </div>
+    <div class="head"><div><h2>💉 疫苗记录</h2><p id="vaccineCount">共 3 条记录</p></div><button class="primary" id="addVaccineBtn">＋ 记录疫苗</button></div>
+    <div class="table-head vaccine-grid"><span>接种日期</span><span>疫苗</span><span>针次</span><span>接种医院</span><span></span></div>
+    <div class="vaccine-list" id="vaccineList"></div>
   </section>
 
   <section class="panel">
@@ -137,6 +134,15 @@
 <div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveTempBtn">保存</button></div>
 </div></div>
 
+<div class="modal" id="vaccineModal"><div class="dialog">
+<div class="head"><div><h2>记录疫苗 💉</h2><p>保存 YOYO 的接种信息</p></div><button class="close" data-close>×</button></div>
+<label>接种日期</label><input type="date" id="vaccineDate">
+<label>疫苗名称</label><input type="text" id="vaccineName" placeholder="例如：妙三多">
+<label>针次</label><input type="text" id="vaccineDose" placeholder="例如：第4针 / 加强针">
+<label>医院名称</label><input type="text" id="vaccineHospital" placeholder="例如：瑞派美和宠物医院">
+<div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveVaccineBtn">保存</button></div>
+</div></div>
+
 <div class="modal" id="dewormModal"><div class="dialog">
 <div class="head"><div><h2>记录驱虫 💊</h2><p>保存驱虫药使用信息</p></div><button class="close" data-close>×</button></div>
 <label>日期</label><input type="date" id="dewormDate"><label>药品名称</label><input type="text" id="dewormDrug" placeholder="例如：大宠爱">
@@ -144,7 +150,7 @@
 <div class="actions"><button class="secondary" data-close>取消</button><button class="primary" id="saveDewormBtn">保存</button></div>
 </div></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=5.2"></script>
 <script>
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));
